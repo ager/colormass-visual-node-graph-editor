@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
 import * as jQuery from 'jquery';
 import * as _ from 'lodash';
 import * as $ from 'backbone';
 import * as joint from 'jointjs';
+
+import { Component } from '@angular/core';
+import { GraphService } from '../graph.service';
 
 @Component({
   selector: 'app-graph-editor',
@@ -11,32 +13,94 @@ import * as joint from 'jointjs';
 })
 export class GraphEditorComponent {
 
+  private paper: joint.dia.Paper | undefined;
+
+  constructor(
+    private graphService: GraphService
+  ) {
+  }
+
 
   ngOnInit() {
-    let graph = new joint.dia.Graph;
+    let graph = this.graphService.getGraph();
 
-    let paper = new joint.dia.Paper({
+    this.paper = new joint.dia.Paper({
       el: jQuery("#paper"),
-      width: 600,
-      height: 200,
+      width: 1000,
+      height: 600,
       model: graph,
-      gridSize: 1
+      gridSize: 1,
+      linkPinning: false,
     });
 
-    let rect = new joint.shapes.basic.Rect({
+    this.paper.on('link:mouseleave', (linkView) => {
+      linkView.removeTools();
+    });
+
+    /*
+     * START - Draw multiple nodes and apply undo() action in between
+     */
+    const rect1 = new joint.shapes.basic.Rect({
       position: { x: 100, y: 30 },
-      size: { width: 100, height: 30 },
-      attrs: { rect: { fill: 'blue' }, text: { text: 'my box', fill: 'white' } }
+      size: { width: 100, height: 100 },
+      attrs: { rect: { fill: '#303133' }, text: { text: 'Node 1', fill: 'white' } },
+      ports: { items: [this.graphService.createPort()] }
     });
+    this.graphService.addElement(rect1);
 
-    let rect2 = rect.clone() as joint.shapes.basic.Rect;
-    rect2.translate(300);
-
-    var link = new joint.dia.Link({
-      source: { id: rect.id },
-      target: { id: rect2.id }
+    const rect2 = new joint.shapes.basic.Rect({
+      position: { x: 250, y: 30 },
+      size: { width: 100, height: 100 },
+      attrs: { rect: { fill: '#303133' }, text: { text: 'Node 2', fill: 'white' } },
+      ports: { items: [this.graphService.createPort(), this.graphService.createPort(), this.graphService.createPort()] }
     });
+    this.graphService.addElement(rect2);
 
-    graph.addCells([rect, rect2, link]);
+    const rect3 = new joint.shapes.basic.Rect({
+      position: { x: 400, y: 30 },
+      size: { width: 100, height: 100 },
+      attrs: { rect: { fill: '#303133' }, text: { text: 'Node 3', fill: 'white' } },
+      ports: { items: [this.graphService.createPort()] }
+    });
+    this.graphService.addElement(rect3);
+
+    this.graphService.undo();
+
+    const rect4 = new joint.shapes.basic.Rect({
+      position: { x: 550, y: 30 },
+      size: { width: 100, height: 100 },
+      attrs: { rect: { fill: '#303133' }, text: { text: 'Node 4', fill: 'white' } },
+      ports: { items: [this.graphService.createPort(), this.graphService.createPort()] }
+    });
+    this.graphService.addElement(rect4);
+
+    this.graphService.undo();
+    this.graphService.redo();
+
+    /*
+     * END
+     */
+  }
+
+  createRandomNode() {
+    const randomNodeNumber = Math.floor(Math.random() * 5)+1;
+    const randomPortNumber = Math.floor(Math.random() * 3)+1;
+    const portsList = Array(randomPortNumber);
+
+    const rect = new joint.shapes.basic.Rect({
+      position: { x: randomNodeNumber * 150, y: 160 },
+      size: { width: 100, height: 100 },
+      attrs: { rect: { fill: '#303133' }, text: { text: 'Node ' + randomNodeNumber, fill: 'white' } },
+      ports: { items: portsList.fill(undefined).map(() => this.graphService.createPort()) }
+    });
+    this.graphService.addElement(rect);
+  }
+
+  undo() {
+    this.graphService.undo();
+  }
+
+  redo() {
+    this.graphService.redo();
   }
 }

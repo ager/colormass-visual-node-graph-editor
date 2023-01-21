@@ -1,1 +1,15 @@
 <div id="paper"></div>
+
+<div class="card-container">
+  <button class="card card-small" (click)="createRandomNode()" tabindex="0">
+    <span>Create new random node</span>
+  </button>
+
+  <button class="card card-small" (click)="undo()" tabindex="0">
+    <span>Undo</span>
+  </button>
+
+  <button class="card card-small" (click)="redo()" tabindex="0">
+    <span>Redo</span>
+  </button>
+</div>
